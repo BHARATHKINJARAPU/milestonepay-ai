@@ -48,3 +48,4 @@
 - [x] Backend tests executed via `pytest` (all passing)
 - [x] Frontend production bundle verified without errors
 - [x] End-to-end local connectivity verified between Frontend, Backend, and PostgreSQL
+

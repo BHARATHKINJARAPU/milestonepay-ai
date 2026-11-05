@@ -22,6 +22,9 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
+    JWT_SECRET_KEY: str = "milestonepay_dev_jwt_secret_key_849302194820194820194820"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_PATH) if ENV_PATH.exists() else None,
@@ -49,3 +52,4 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+

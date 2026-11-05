@@ -68,3 +68,4 @@ def get_ready(db: Session = Depends(get_db)) -> ReadyResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database service is unavailable. Please verify PostgreSQL connection.",
         ) from None
+

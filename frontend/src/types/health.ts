@@ -20,3 +20,4 @@ export interface DiagnosticsState {
   databaseMessage?: string;
   errorDetail?: string;
 }
+

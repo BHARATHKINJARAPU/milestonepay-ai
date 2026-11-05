@@ -1,37 +1,44 @@
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
-import { Navbar } from './components/layout/Navbar';
-import { HeroSection } from './components/sections/HeroSection';
-import { HowItWorks } from './components/sections/HowItWorks';
-import { FeaturesSection } from './components/sections/FeaturesSection';
-import { ConnectionStatus } from './components/status/ConnectionStatus';
-import { Footer } from './components/layout/Footer';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { DashboardLayout } from './components/dashboard/DashboardLayout';
+import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
+import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { ProjectsPage } from './pages/projects/ProjectsPage';
+import { CreateProjectPage } from './pages/projects/CreateProjectPage';
+import { ProjectDetailPage } from './pages/projects/ProjectDetailPage';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-blue-600 selection:text-white bg-grid-pattern">
-        {/* Navigation Bar */}
-        <Navbar />
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        {/* Main Content */}
-        <main className="flex-1">
-          {/* Hero Section */}
-          <HeroSection />
+          {/* Protected Dashboard & Project Routes */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/new" element={<CreateProjectPage />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
+          </Route>
 
-          {/* How It Works (3-Stage Workflow) */}
-          <HowItWorks />
-
-          {/* Features Section (6 Planned Capabilities) */}
-          <FeaturesSection />
-
-          {/* Live System Diagnostics (Real FastAPI & PostgreSQL checks) */}
-          <ConnectionStatus />
-        </main>
-
-        {/* Footer */}
-        <Footer />
-      </div>
+          {/* Fallback to Home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 };

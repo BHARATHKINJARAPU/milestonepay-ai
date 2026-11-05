@@ -21,3 +21,4 @@ services:
 volumes:
   postgres_data:
     name: milestonepay_postgres_data
+

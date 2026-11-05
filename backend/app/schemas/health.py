@@ -17,3 +17,4 @@ class ReadyResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """Safe error response schema."""
     detail: str = Field(description="Safe error description")
+

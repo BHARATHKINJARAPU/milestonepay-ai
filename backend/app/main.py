@@ -61,3 +61,4 @@ def root_status():
             "ready": f"{settings.API_V1_PREFIX}/health/ready",
         }
     )
+

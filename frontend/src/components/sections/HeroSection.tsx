@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, CheckCircle2, Clock, FileCode, CheckCheck, Cpu, Shield } from 'lucide-react';
 
 export const HeroSection: React.FC = () => {
@@ -38,12 +39,12 @@ export const HeroSection: React.FC = () => {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </a>
 
-              <a
-                href="#features"
+              <Link
+                to="/register"
                 className="w-full sm:w-auto px-7 py-3.5 rounded-xl font-medium text-slate-200 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 transition-all text-base text-center"
               >
                 Get Started
-              </a>
+              </Link>
             </div>
 
             {/* Trust highlights */}
@@ -168,3 +169,4 @@ export const HeroSection: React.FC = () => {
     </section>
   );
 };
+
