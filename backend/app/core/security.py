@@ -78,3 +78,4 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     except jwt.PyJWTError as exc:
         logger.warning("JWT validation failed: %s", type(exc).__name__)
         return None
+

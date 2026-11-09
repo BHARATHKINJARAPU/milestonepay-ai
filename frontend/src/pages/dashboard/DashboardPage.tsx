@@ -1,21 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { 
-  FolderKanban, 
-  CheckCircle2, 
-  Clock, 
-  DollarSign, 
-  Plus, 
-  ArrowRight, 
-  Calendar, 
+import {
   AlertCircle,
-  Sparkles
+  AlertTriangle,
+  ArrowRight,
+  Briefcase,
+  CheckCircle2,
+  Clock,
+  FolderKanban,
+  Loader2,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
 import { StatCard } from '../../components/dashboard/StatCard';
+import { FinancialOverviewCard } from '../../components/dashboard/FinancialOverviewCard';
+import { ReviewCenterList } from '../../components/dashboard/ReviewCenterList';
+import { UpcomingDeadlinesList } from '../../components/dashboard/UpcomingDeadlinesList';
+import { MilestoneProgressBar } from '../../components/dashboard/MilestoneProgressBar';
+import { PaymentTrendChart } from '../../components/dashboard/PaymentTrendChart';
+import { CollaboratorList } from '../../components/dashboard/CollaboratorList';
 import { ProjectCard } from '../../components/projects/ProjectCard';
 import { useAuth } from '../../context/AuthContext';
-import { getProjects } from '../../lib/api';
+import { getDashboardAnalytics, getPaymentAnalytics, getProjects } from '../../lib/api';
+import { DashboardAnalytics, PaymentAnalytics } from '../../types/analytics';
 import { Project } from '../../types/project';
 
 interface OutletContextType {
@@ -26,192 +36,201 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const { onOpenMobileMenu } = useOutletContext<OutletContextType>();
 
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
+  const [paymentAnalytics, setPaymentAnalytics] = useState<PaymentAnalytics | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const data = await getProjects();
-        setProjects(data);
-      } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : 'Failed to load projects');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
 
   const isClient = user?.account_type === 'client';
 
-  // Computed metrics
-  const activeCount = projects.filter(p => p.status === 'active').length;
-  const completedCount = projects.filter(p => p.status === 'completed').length;
-  const totalBudget = projects.reduce((acc, p) => acc + Number(p.budget_amount || 0), 0);
+  const loadData = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const [analyticsData, payAnalyticsData, projectsData] = await Promise.all([
+        getDashboardAnalytics(),
+        getPaymentAnalytics(),
+        getProjects(),
+      ]);
+      setAnalytics(analyticsData);
+      setPaymentAnalytics(payAnalyticsData);
+      setProjects(projectsData);
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load dashboard data.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Projects with upcoming deadlines
-  const upcomingDeadlines = projects
-    .filter(p => p.deadline && p.status !== 'completed' && p.status !== 'archived')
-    .sort((a, b) => (a.deadline! > b.deadline! ? 1 : -1))
-    .slice(0, 3);
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const todayStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
-    <div>
+    <div className="space-y-8 pb-16">
       <DashboardHeader
-        title={isClient ? "Client Portal" : "Freelancer Workspace"}
-        subtitle={`Welcome back, ${user?.full_name || 'User'}`}
+        title={`${isClient ? 'Client' : 'Freelancer'} Workspace`}
+        subtitle={`Welcome back, ${user?.full_name || 'Partner'}. Today is ${todayStr}.`}
         onOpenMobileMenu={onOpenMobileMenu}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
-        {errorMessage && (
-          <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-900/60 text-xs text-rose-300 flex items-center gap-3">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{errorMessage}</span>
+      {/* Top Welcome / Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-slate-900 to-indigo-950/30 p-6 sm:p-8 backdrop-blur-md shadow-xl shadow-blue-950/10">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800/40">
+              <Sparkles className="h-3 w-3" />
+              <span>MilestonePay AI &bull; {isClient ? 'Enterprise Client Suite' : 'Autonomous Freelancer Hub'}</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              {isClient
+                ? 'Review deliverables, inspect AI audits & release milestone payments.'
+                : 'Structure project deliverables, track milestones & get paid transparently.'}
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {isClient
+                ? 'Your client dashboard aggregates active project commitments, milestone review queues, and verified PayPal Sandbox captures in one place.'
+                : 'Your freelancer dashboard gives you clear visibility into agreed milestone deliverables, upcoming deadlines, and platform settlement status.'}
+            </p>
           </div>
-        )}
 
-        {/* Metric Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title={isClient ? "Projects Created" : "Total Projects"}
-            value={projects.length}
-            icon={FolderKanban}
-            description="All scoped projects"
-            accent="from-blue-600 to-indigo-600"
-          />
-          <StatCard
-            title="In Progress"
-            value={activeCount}
-            icon={Clock}
-            description="Active deliverable milestones"
-            accent="from-emerald-600 to-teal-600"
-          />
-          <StatCard
-            title="Completed"
-            value={completedCount}
-            icon={CheckCircle2}
-            description="Verified & approved projects"
-            accent="from-indigo-600 to-violet-600"
-          />
-          <StatCard
-            title="Total Volume"
-            value={`$${totalBudget.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-            icon={DollarSign}
-            description="Aggregate contract value"
-            accent="from-violet-600 to-fuchsia-600"
-          />
+          <div className="flex items-center gap-3">
+            <Link
+              to="/projects/new"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/50 transition-all cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create Project</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={loadData}
+              disabled={isLoading}
+              title="Refresh Dashboard"
+              className="flex items-center justify-center h-10 w-10 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* 2-Column Section: Project List & Upcoming Deadlines / Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Main Column: Recent Projects */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Active & Recent Projects</h2>
-                <p className="text-xs text-slate-400">Direct overview of your current milestone engagements</p>
-              </div>
-              {projects.length > 0 && (
-                <Link
-                  to="/projects"
-                  className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors"
-                >
-                  <span>View All ({projects.length})</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              )}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-24 text-slate-500 space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+          <p className="text-xs font-mono">Aggregating PostgreSQL project and financial records...</p>
+        </div>
+      ) : errorMessage ? (
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-6 text-center text-xs text-rose-300 flex items-center justify-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>{errorMessage}</span>
+        </div>
+      ) : analytics ? (
+        <div className="space-y-8">
+          {/* Top Key Statistics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Projects"
+              value={analytics.projects.total}
+              subtitle={`${analytics.projects.active} active workspace(s)`}
+              icon={FolderKanban}
+              badge={analytics.projects.completed > 0 ? `${analytics.projects.completed} done` : undefined}
+              colorScheme="blue"
+            />
+            <StatCard
+              title="Approved Milestones"
+              value={analytics.milestones.approved}
+              subtitle={`Out of ${analytics.milestones.total} total milestones`}
+              icon={CheckCircle2}
+              badge={`${Math.round((analytics.milestones.approved / (analytics.milestones.total || 1)) * 100)}%`}
+              colorScheme="emerald"
+            />
+            <StatCard
+              title={isClient ? 'Actionable Reviews' : 'Milestones In Progress'}
+              value={isClient ? analytics.projects.attention_needed : analytics.milestones.in_progress}
+              subtitle={isClient ? 'Submissions or plans awaiting client review' : 'Active milestone deliverables'}
+              icon={isClient ? AlertTriangle : Clock}
+              colorScheme="amber"
+            />
+            <StatCard
+              title="Platform Settlements"
+              value={`$${(
+                (analytics.payments.completed_paypal_by_currency[0]?.amount || 0) +
+                (analytics.payments.completed_mock_by_currency[0]?.amount || 0)
+              ).toFixed(2)}`}
+              subtitle={`${analytics.payments.completed_count} verified settlement(s)`}
+              icon={ShieldCheck}
+              badge={analytics.payments.completed_paypal_by_currency[0]?.amount ? 'PayPal' : 'Mock'}
+              colorScheme="cyan"
+            />
+          </div>
+
+          {/* Review Center for Client OR Upcoming Deadlines for Freelancer */}
+          {isClient ? (
+            <ReviewCenterList items={analytics.review_center} />
+          ) : (
+            <UpcomingDeadlinesList deadlines={analytics.upcoming_deadlines} />
+          )}
+
+          {/* Financial Commitments & Settlements */}
+          <FinancialOverviewCard payments={analytics.payments} role={analytics.role} />
+
+          {/* Milestone Execution Breakdown & Settlement Trends */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MilestoneProgressBar summary={analytics.milestones} />
+            <PaymentTrendChart trends={paymentAnalytics?.trends || []} />
+          </div>
+
+          {/* Collaborator Overview & Recent Projects Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <CollaboratorList collaborators={analytics.collaborators} role={analytics.role} />
             </div>
 
-            {isLoading ? (
-              <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-slate-800 text-slate-500 text-sm font-mono">
-                Loading workspace projects...
-              </div>
-            ) : projects.length === 0 ? (
-              /* Meaningful Empty State */
-              <div className="p-10 rounded-3xl bg-slate-900/50 border border-slate-800 text-center space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 mx-auto flex items-center justify-center text-blue-400">
-                  <FolderKanban className="w-6 h-6" />
-                </div>
-                <div className="max-w-sm mx-auto space-y-1">
-                  <h3 className="text-base font-semibold text-white">No projects found</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {isClient
-                      ? "Get started by creating your first project brief and adding a registered freelancer to collaborate."
-                      : "You are not currently linked to any projects. Create a new project scope or ask your client to add you."}
-                  </p>
+            <div className="lg:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-cyan-400" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-white font-mono">
+                    Recent Projects
+                  </h3>
                 </div>
                 <Link
-                  to="/projects/new"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/20 transition-all"
+                  to="/projects"
+                  className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Create First Project</span>
+                  <span>View all</span>
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.slice(0, 4).map(project => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Side Column: Deadlines & Activity */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Upcoming Deadlines Widget */}
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2 text-white text-sm font-semibold">
-                  <Calendar className="w-4 h-4 text-blue-400" />
-                  <span>Upcoming Deadlines</span>
+              {projects.length === 0 ? (
+                <div className="py-10 text-center text-xs text-slate-500">
+                  No projects created yet.{' '}
+                  <Link to="/projects/new" className="text-cyan-400 hover:underline">
+                    Create your first project
+                  </Link>
                 </div>
-                <span className="text-[10px] font-mono text-slate-500 uppercase">Target</span>
-              </div>
-
-              {upcomingDeadlines.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-2">
-                  No upcoming deadlines scheduled across current projects.
-                </p>
               ) : (
-                <div className="space-y-3">
-                  {upcomingDeadlines.map(p => (
-                    <Link
-                      key={p.id}
-                      to={`/projects/${p.id}`}
-                      className="block p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80 hover:border-blue-500/30 transition-all group"
-                    >
-                      <h4 className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors line-clamp-1">
-                        {p.title}
-                      </h4>
-                      <div className="mt-1 flex items-center justify-between text-[11px] font-mono text-slate-400">
-                        <span>{p.currency} {Number(p.budget_amount).toLocaleString()}</span>
-                        <span className="text-amber-400 font-medium">{p.deadline}</span>
-                      </div>
-                    </Link>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {projects.slice(0, 4).map((p) => (
+                    <ProjectCard key={p.id} project={p} />
                   ))}
                 </div>
               )}
             </div>
-
-            {/* Architecture / Next Phase Roadmap Card */}
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-indigo-900/40 space-y-3">
-              <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider font-mono">
-                <Sparkles className="w-4 h-4" />
-                <span>Next Milestone AI Preview</span>
-              </div>
-              <h4 className="text-sm font-bold text-white">AI Milestone Breakdown (Day 3)</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                In upcoming phases, you will be able to click <strong className="text-slate-300">"Generate Milestones"</strong> on any project to decompose unstructured briefs into verified milestones and PayPal escrow checkouts.
-              </p>
-            </div>
           </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 };

@@ -2,9 +2,9 @@
 
 # Environment configuration
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
+!.env.*.example
 
 # Python
 __pycache__/
@@ -74,6 +74,8 @@ pnpm-debug.log*
 pgsql_portable/
 *.sqlite3
 *.db
+uploads/
+backend/uploads/
 
 # IDE & Editors
 .idea/

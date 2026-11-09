@@ -11,8 +11,29 @@ backend_dir = Path(__file__).resolve().parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
+# Configure psycopg python fallback and portable libpq path on Windows
+os.environ.setdefault("PSYCOPG_IMPL", "python")
+libpq_path = r"C:\Users\kinja\AppData\Local\Temp\pgsql_portable\pgsql\bin"
+if os.path.exists(libpq_path) and libpq_path not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = libpq_path + os.pathsep + os.environ.get("PATH", "")
+
 from app.core.config import settings
-from app.models import Base, User, Project, ProjectMember
+from app.models import (
+    Base,
+    Milestone,
+    MilestonePlan,
+    MilestonePlanReview,
+    MilestoneSubmission,
+    Notification,
+    Payment,
+    PaymentEvent,
+    PayPalWebhookEvent,
+    Project,
+    ProjectActivity,
+    ProjectMember,
+    SubmissionEvidence,
+    User,
+)
 
 # this is the Alembic Config object
 config = context.config

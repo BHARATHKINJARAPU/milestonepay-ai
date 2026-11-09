@@ -19,6 +19,14 @@ from app.schemas.project import (
     ProjectStatusUpdateRequest,
     ProjectUpdateRequest,
 )
+from app.schemas.project_activity import (
+    ProjectActivityListResponse,
+    ProjectActivityResponse,
+)
+from app.schemas.analytics import ProjectAiSummaryResponse
+from app.services.activity_service import activity_service
+from app.services.analytics_service import analytics_service
+from app.services.notification_service import notification_service
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +94,19 @@ def create_project(
     )
     db.add(initial_member)
     db.commit()
+
+    # Record creation activity
+    try:
+        activity_service.record_activity(
+            db=db,
+            project_id=project.id,
+            activity_type="project_created",
+            title=f"Project '{project.title}' Created",
+            actor_user_id=current_user.id,
+            description=f"Project initialized by {current_user.full_name} ({creator_role.value}) with budget {project.currency} {float(project.budget_amount):,.2f}.",
+        )
+    except Exception as exc:
+        logger.warning("Could not record project creation activity: %s", exc)
 
     loaded_project = _get_project_with_members(project.id, db)
     logger.info("Project created: %s (id: %s) by %s", loaded_project.title, loaded_project.id, current_user.email)
@@ -282,6 +303,28 @@ def add_project_member(
     db.add(new_member)
     db.commit()
 
+    # Record collaborator addition activity and dispatch user notification
+    try:
+        activity_service.record_activity(
+            db=db,
+            project_id=project.id,
+            activity_type="collaborator_added",
+            title=f"Collaborator Joined: {collaborator.full_name}",
+            actor_user_id=current_user.id,
+            description=f"{collaborator.full_name} joined project as {collaborator_role.value}.",
+        )
+        notification_service.create_notification(
+            db=db,
+            user_id=collaborator.id,
+            notification_type="collaborator_added",
+            title="Invited to Project",
+            message=f"You have been added to '{project.title}' as {collaborator_role.value} by {current_user.full_name}.",
+            action_url=f"/projects/{project.id}",
+            project_id=project.id,
+        )
+    except Exception as exc:
+        logger.warning("Could not record collaborator activity/notification: %s", exc)
+
     logger.info("Added %s as %s to project %s", collaborator.email, collaborator_role.value, project.id)
     return _get_project_with_members(project_id, db)
 
@@ -335,3 +378,73 @@ def update_project_status(
 
     logger.info("Project %s transitioned from %s to %s", project.id, current_status.value, target_status.value)
     return _get_project_with_members(project_id, db)
+
+
+@router.get(
+    "/{project_id}/activities",
+    response_model=ProjectActivityListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get project activity timeline",
+    description="Returns chronological audit trail of all project events visible only to project members.",
+)
+def get_project_activities(
+    project_id: uuid.UUID,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProjectActivityListResponse:
+    """Retrieve chronological activity events for authorized project members."""
+    project = _get_project_with_members(project_id, db)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found.",
+        )
+
+    if not any(m.user_id == current_user.id for m in project.members):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to view activities for this project.",
+        )
+
+    activities, total = activity_service.get_project_activities(db, project_id, skip=skip, limit=limit)
+    return ProjectActivityListResponse(
+        activities=[
+            ProjectActivityResponse(
+                id=a.id,
+                project_id=a.project_id,
+                actor_user_id=a.actor_user_id,
+                actor_name=a.actor.full_name if a.actor else None,
+                activity_type=a.activity_type,
+                title=a.title,
+                description=a.description,
+                activity_metadata=a.activity_metadata or {},
+                created_at=a.created_at,
+            )
+            for a in activities
+        ],
+        total=total,
+    )
+
+
+@router.get(
+    "/{project_id}/ai-summary",
+    response_model=ProjectAiSummaryResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get project AI health summary",
+    description="Returns Gemini-powered or factual project health assessment and risk evaluation.",
+)
+def get_project_ai_summary(
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProjectAiSummaryResponse:
+    """Convenience alias route for project AI summary."""
+    return analytics_service.get_project_ai_summary(
+        db=db,
+        project_id=project_id,
+        current_user=current_user,
+    )
+
+

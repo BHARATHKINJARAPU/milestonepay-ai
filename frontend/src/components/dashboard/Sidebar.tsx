@@ -4,6 +4,8 @@ import {
   LayoutDashboard, 
   FolderKanban, 
   FolderPlus, 
+  CreditCard,
+  Bell,
   LogOut, 
   Layers, 
   User as UserIcon,
@@ -27,6 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const navItems = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Projects', to: '/projects', icon: FolderKanban },
+    { name: 'Payments', to: '/payments', icon: CreditCard },
+    { name: 'Notifications', to: '/notifications', icon: Bell },
     { name: 'Create Project', to: '/projects/new', icon: FolderPlus },
   ];
 

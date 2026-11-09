@@ -86,3 +86,4 @@ class ProjectListResponse(BaseModel):
 
     projects: List[ProjectResponse]
     total: int
+

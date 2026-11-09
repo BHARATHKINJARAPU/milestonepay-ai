@@ -39,3 +39,4 @@ export interface AuthContextType {
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
+

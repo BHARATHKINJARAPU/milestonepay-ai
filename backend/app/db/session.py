@@ -1,6 +1,13 @@
+import os
 from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+# Ensure psycopg uses the python implementation and libpq path on Windows
+os.environ.setdefault("PSYCOPG_IMPL", "python")
+libpq_path = r"C:\Users\kinja\AppData\Local\Temp\pgsql_portable\pgsql\bin"
+if os.path.exists(libpq_path) and libpq_path not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = libpq_path + os.pathsep + os.environ.get("PATH", "")
 
 from app.core.config import settings
 

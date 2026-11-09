@@ -48,7 +48,7 @@ export const FeaturesSection: React.FC = () => {
       icon: WalletCards,
       badge: 'Planned Capability',
       description:
-        'Direct PayPal Sandbox checkout integration for secure milestone escrow holding and instantaneous payout upon verified delivery.',
+        'Direct PayPal Sandbox checkout integration for secure milestone payments and verified client approvals upon delivery.',
       techNote: 'Target: Phase 4 (Fintech Bridge)',
     },
     {

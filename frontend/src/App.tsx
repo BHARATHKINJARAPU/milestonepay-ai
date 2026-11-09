@@ -10,6 +10,13 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { ProjectsPage } from './pages/projects/ProjectsPage';
 import { CreateProjectPage } from './pages/projects/CreateProjectPage';
 import { ProjectDetailPage } from './pages/projects/ProjectDetailPage';
+import { MilestoneWorkspacePage } from './pages/milestones/MilestoneWorkspacePage';
+import { SubmitDeliverablePage } from './pages/submissions/SubmitDeliverablePage';
+import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
+import { MilestonePaymentPage } from './pages/payments/MilestonePaymentPage';
+import { PaymentHistoryPage } from './pages/payments/PaymentHistoryPage';
+import { PaymentResultPage } from './pages/payments/PaymentResultPage';
+import { NotificationsPage } from './pages/notifications/NotificationsPage';
 
 export const App: React.FC = () => {
   return (
@@ -33,6 +40,22 @@ export const App: React.FC = () => {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<CreateProjectPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/projects/:projectId/milestones" element={<MilestoneWorkspacePage />} />
+            <Route
+              path="/projects/:projectId/milestones/:milestoneId/submit"
+              element={<SubmitDeliverablePage />}
+            />
+            <Route
+              path="/projects/:projectId/milestones/:milestoneId/submissions/:submissionId"
+              element={<SubmissionDetailPage />}
+            />
+            <Route
+              path="/projects/:projectId/milestones/:milestoneId/pay"
+              element={<MilestonePaymentPage />}
+            />
+            <Route path="/payments" element={<PaymentHistoryPage />} />
+            <Route path="/payments/:paymentId/result" element={<PaymentResultPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
 
           {/* Fallback to Home */}

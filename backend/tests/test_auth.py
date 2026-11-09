@@ -163,3 +163,4 @@ def test_authenticated_profile_retrieval():
     assert data["email"] == email
     assert data["full_name"] == "Profile User"
     assert data["account_type"] == "client"
+

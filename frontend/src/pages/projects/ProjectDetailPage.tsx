@@ -12,14 +12,21 @@ import {
   AlertCircle, 
   Loader2, 
   Archive,
-  PlayCircle
+  PlayCircle,
+  Bot,
+  ChevronRight,
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
 import { CollaboratorForm } from '../../components/projects/CollaboratorForm';
 import { ProjectForm } from '../../components/projects/ProjectForm';
+import { ProjectAiSummaryCard } from '../../components/projects/ProjectAiSummaryCard';
+import { ProjectActivityTimeline } from '../../components/activity/ProjectActivityTimeline';
 import { useAuth } from '../../context/AuthContext';
-import { getProject, updateProject, updateProjectStatus } from '../../lib/api';
+import { getMilestonePlans, getProject, updateProject, updateProjectStatus } from '../../lib/api';
 import { Project, ProjectCreateInput, ProjectStatus, ProjectUpdateInput } from '../../types/project';
+import { MilestonePlan } from '../../types/milestone';
 
 interface OutletContextType {
   onOpenMobileMenu: () => void;
@@ -31,6 +38,7 @@ export const ProjectDetailPage: React.FC = () => {
   const { onOpenMobileMenu } = useOutletContext<OutletContextType>();
 
   const [project, setProject] = useState<Project | null>(null);
+  const [latestPlan, setLatestPlan] = useState<MilestonePlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusActionLoading, setStatusActionLoading] = useState(false);
@@ -40,8 +48,14 @@ export const ProjectDetailPage: React.FC = () => {
     if (!id) return;
     setIsLoading(true);
     try {
-      const data = await getProject(id);
-      setProject(data);
+      const [projData, plansData] = await Promise.all([
+        getProject(id),
+        getMilestonePlans(id).catch(() => ({ plans: [], total: 0 })),
+      ]);
+      setProject(projData);
+      if (plansData.plans && plansData.plans.length > 0) {
+        setLatestPlan(plansData.plans[0]);
+      }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to retrieve project details');
     } finally {
@@ -265,15 +279,91 @@ export const ProjectDetailPage: React.FC = () => {
               </p>
             </div>
 
-            {/* AI Milestones placeholder for next phase */}
-            <div className="p-6 rounded-3xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-2">
-              <span className="text-xs font-mono text-indigo-400 font-semibold uppercase">
-                Phase 3 Integration Point
-              </span>
-              <h4 className="text-sm font-semibold text-white">AI Milestone Generation Engine</h4>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Once agreed by both the Client and Freelancer, AI will parse the description into structured milestone items and deliverable acceptance criteria.
-              </p>
+            {/* AI Milestones & Agreement Card */}
+            <div className="rounded-3xl border border-cyan-500/20 bg-gradient-to-b from-slate-900/90 to-slate-950/90 p-6 sm:p-8 backdrop-blur-sm shadow-xl shadow-cyan-950/10">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 text-cyan-400">
+                    <Bot className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                      Gemini AI Milestone Plan
+                      <Sparkles className="h-4 w-4 text-cyan-400" />
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Verifiable milestones, deliverables, and bilateral agreement contract
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status indicator */}
+                <div>
+                  {latestPlan ? (
+                    latestPlan.status === 'agreed' ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/50 px-3 py-1 text-xs font-semibold text-emerald-400">
+                        <Lock className="h-3.5 w-3.5" />
+                        Agreed & In Progress (v{latestPlan.version})
+                      </span>
+                    ) : latestPlan.status === 'pending_approval' ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-950/50 px-3 py-1 text-xs font-semibold text-amber-300">
+                        Awaiting Mutual Approval (v{latestPlan.version})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
+                        Draft Plan (v{latestPlan.version})
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/30 px-3 py-1 text-xs font-semibold text-cyan-300">
+                      Not Generated Yet
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {latestPlan ? (
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-4">
+                    <div className="text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Latest Proposal Summary
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+                      {latestPlan.project_summary}
+                    </p>
+                    <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
+                      <span className="text-white font-medium">
+                        {latestPlan.milestones.length} Milestones
+                      </span>
+                      <span>&bull;</span>
+                      <span className="text-cyan-400 font-mono font-semibold">
+                        100% Budget Balanced
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    to={`/projects/${project.id}/milestones`}
+                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-cyan-600 px-5 py-3 text-xs font-semibold text-white shadow-lg shadow-cyan-950/50 hover:bg-cyan-500 transition-all"
+                  >
+                    <span>Open Milestone Agreement Workspace</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-5 text-center py-4 space-y-3">
+                  <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                    Decompose this project description into structured milestones with clear acceptance criteria and exact budget distribution using Google Gemini.
+                  </p>
+                  <Link
+                    to={`/projects/${project.id}/milestones`}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-6 py-2.5 text-xs font-semibold text-white shadow-lg shadow-cyan-950/40 hover:from-cyan-400 hover:to-indigo-500 transition-all"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Generate Milestone Plan with AI</span>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 
@@ -344,6 +434,12 @@ export const ProjectDetailPage: React.FC = () => {
               />
             )}
           </div>
+        </div>
+
+        {/* Day 6: AI Project Health Summary & Chronological Activity Timeline */}
+        <div className="space-y-6 pt-2">
+          <ProjectAiSummaryCard projectId={project.id} />
+          <ProjectActivityTimeline projectId={project.id} />
         </div>
       </div>
     </div>

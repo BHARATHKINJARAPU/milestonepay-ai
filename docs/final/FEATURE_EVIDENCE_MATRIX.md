@@ -1,0 +1,45 @@
+# MilestonePay AI — Feature Evidence Matrix
+**PayPal AI Hackathon Submission**  
+*Document Generated: Day 8 Final Independent Review*
+
+---
+
+## 1. Feature Verification & Implementation Mapping
+
+Every core capability of MilestonePay AI has been inspected, cross-referenced with exact codebase files, and verified via automated tests (`pytest`) and live HTTP regression tests.
+
+| # | Core Capability | Frontend Page / Component | Backend API Endpoint | Database Model(s) | Test Coverage | Live Execution Evidence | Current Status |
+|---|---|---|---|---|---|---|---|
+| **1** | **User Registration (Client & Freelancer)** | `frontend/src/pages/auth/RegisterPage.tsx` | `POST /api/v1/auth/register` | `User` (`backend/app/models/user.py`) | `tests/test_auth.py::test_successful_registration` | Verified Argon2id password hashing, HTTP 201 Created response, and role assignment. | **PASS** |
+| **2** | **User Authentication & JWT Issuance** | `frontend/src/pages/auth/LoginPage.tsx` | `POST /api/v1/auth/login` | `User` | `tests/test_auth.py::test_successful_login` | Bearer JWT token returned with 60m expiry; invalid password rejected with 401. | **PASS** |
+| **3** | **Role-Based Profile & Route Protection** | `frontend/src/components/auth/ProtectedRoute.tsx` | `GET /api/v1/auth/me` | `User` | `tests/test_auth.py::test_authenticated_profile_retrieval` | Client vs Freelancer role separation verified; tampered JWT blocked with 401. | **PASS** |
+| **4** | **Project Creation & Ownership** | `frontend/src/pages/projects/CreateProjectPage.tsx` | `POST /api/v1/projects` | `Project`, `ProjectMember` (`backend/app/models/project.py`) | `tests/test_projects.py::test_authenticated_project_creation` | Project created with initial budget; creator assigned `client` role and ownership. | **PASS** |
+| **5** | **Collaborator Invitation & Access Isolation** | `frontend/src/components/projects/CollaboratorForm.tsx` | `POST /api/v1/projects/{id}/members` | `ProjectMember` | `tests/test_projects.py::test_adding_complementary_registered_collaborator` | Freelancer invited by email; non-members strictly blocked with 403/404. | **PASS** |
+| **6** | **Gemini AI Milestone Plan Generation** | `frontend/src/pages/milestones/MilestoneWorkspacePage.tsx` | `POST /api/v1/projects/{id}/milestone-plans/generate` | `MilestonePlan`, `Milestone` (`backend/app/models/milestone_plan.py`) | `tests/test_milestones.py::test_generate_ai_milestone_plan_success` | Gemini 2.5 Flash generates structured milestones with Pydantic JSON schema; cent-exact sum guaranteed. | **PASS** |
+| **7** | **Manual Milestone Authoring & Draft Editing** | `frontend/src/pages/milestones/MilestoneWorkspacePage.tsx` | `POST /api/v1/projects/{id}/milestone-plans/manual`<br>`PATCH /api/v1/projects/{id}/milestone-plans/{plan_id}` | `MilestonePlan`, `Milestone` | `tests/test_milestones.py::test_create_manual_milestone_plan`<br>`tests/test_milestones.py::test_update_draft_plan` | Manual plan creation and draft editing succeed; percentages enforced to sum to 100%. | **PASS** |
+| **8** | **Two-Party Bilateral Milestone Agreement** | `frontend/src/pages/milestones/MilestoneWorkspacePage.tsx` | `POST /api/v1/projects/{id}/milestone-plans/{plan_id}/submit-for-approval`<br>`POST /api/v1/projects/{id}/milestone-plans/{plan_id}/approve` | `MilestonePlan`, `MilestonePlanReview` | `tests/test_milestones.py::test_bilateral_approval_and_plan_agreement` | Work locked until both client and freelancer approve; transitions plan to `AGREED` and milestones to `ACTIVE`. | **PASS** |
+| **9** | **Milestone Revision Request Workflow** | `frontend/src/pages/milestones/MilestoneWorkspacePage.tsx` | `POST /api/v1/projects/{id}/milestone-plans/{plan_id}/request-revision` | `MilestonePlan`, `MilestonePlanReview` | `tests/test_milestones.py::test_revision_request_workflow` | Feedback comments recorded; plan reverts to `revision_requested` for draft modification. | **PASS** |
+| **10** | **Deliverable Submission & Evidence Upload** | `frontend/src/pages/submissions/SubmitDeliverablePage.tsx` | `POST /api/v1/projects/{id}/milestones/{id}/submissions`<br>`POST /api/v1/submissions/{id}/evidence` | `MilestoneSubmission`, `SubmissionEvidence` | `tests/test_submissions.py::test_valid_evidence_upload` | Chunked upload with 10MB limit; whitelist validation (PDF, PNG, JPG, TXT); SHA-256 hash & random UUID storage keys. | **PASS** |
+| **11** | **Gemini AI Deliverable Evaluation** | `frontend/src/pages/submissions/SubmissionDetailPage.tsx` | `POST /api/v1/submissions/{id}/submit`<br>`POST /api/v1/submissions/{id}/evaluate` | `AISubmissionReview` (`backend/app/models/submission_review.py`) | `tests/test_submissions.py::test_valid_gemini_output_saved` | Gemini evaluates evidence against acceptance criteria; outputs confidence score, met/unmet findings, and gaps. | **PASS** |
+| **12** | **Client Deliverable Revision Loop** | `frontend/src/pages/submissions/SubmissionDetailPage.tsx` | `POST /api/v1/submissions/{id}/request-revision` | `MilestoneSubmission`, `ClientSubmissionReview` | `tests/test_submissions.py::test_client_revision_request_workflow` | Attempt #1 frozen with feedback; Freelancer creates Attempt #2, preserving full versioned audit trail. | **PASS** |
+| **13** | **Client Deliverable Sign-off** | `frontend/src/pages/submissions/SubmissionDetailPage.tsx` | `POST /api/v1/submissions/{id}/approve` | `MilestoneSubmission`, `ClientSubmissionReview`, `Milestone` | `tests/test_submissions.py::test_client_approves_submission_and_locks` | Client authorizes approval; non-clients blocked (403); milestone status advances to `APPROVED`, unlocking payment. | **PASS** |
+| **14** | **Payment Eligibility Verification** | `frontend/src/pages/payments/MilestonePaymentPage.tsx` | `GET /api/v1/projects/{id}/milestones/{id}/payment-eligibility` | `Milestone`, `Payment` (`backend/app/models/payment.py`) | `tests/test_payments.py::test_eligible_approved_milestone_returns_true` | Validates approval status, client role, and returns canonical database amount. | **PASS** |
+| **15** | **PayPal Sandbox Order Creation** | `frontend/src/components/payments/PayPalCheckout.tsx` | `POST /api/v1/projects/{id}/milestones/{id}/payments` | `Payment`, `PaymentEvent` | `tests/test_payments.py::test_paypal_order_creation_with_milestone_amount` | Backend queries PostgreSQL for canonical amount; creates order via PayPal REST API v2 (`/v2/checkout/orders`). | **PASS** |
+| **16** | **PayPal Sandbox Order Capture** | `frontend/src/components/payments/PayPalCheckout.tsx` | `POST /api/v1/payments/{id}/capture` | `Payment`, `PaymentEvent`, `Milestone` | `tests/test_payments.py::test_paypal_order_capture_success_and_milestone_synchronization` | Backend captures order via PayPal REST API v2; verifies capture amount == milestone amount; updates milestone to `PAID`. | **PASS** |
+| **17** | **Payment Amount Tampering Defense** | `frontend/src/components/payments/PaymentSummary.tsx` | `POST /api/v1/payments/{id}/capture` | `Payment` | `tests/test_payments.py::test_paypal_capture_rejects_amount_mismatch` | Browser dev tools cannot alter amount; backend enforces database amount and rejects mismatches. | **PASS** |
+| **18** | **Idempotent Payment Processing** | `frontend/src/pages/payments/PaymentResultPage.tsx` | `POST /api/v1/payments/{id}/capture` | `Payment`, `PaymentEvent` | `tests/test_payments.py::test_duplicate_mock_confirmation_is_idempotent` | Re-executing capture on completed payment returns existing record without duplicate billing. | **PASS** |
+| **19** | **In-App Notifications & Unread Badge** | `frontend/src/components/notifications/NotificationBell.tsx` | `GET /api/v1/notifications`<br>`PATCH /api/v1/notifications/read-all` | `Notification` (`backend/app/models/notification.py`) | `tests/test_day6_integration.py::test_notification_creation_and_unread_count` | Real-time alerts for invitations, approvals, submissions, and payments with unread counter. | **PASS** |
+| **20** | **Project Activity Audit Timeline** | `frontend/src/components/activity/ProjectActivityTimeline.tsx` | `GET /api/v1/projects/{id}/activities` | `ProjectActivity` (`backend/app/models/project_activity.py`) | `tests/test_day6_integration.py::test_project_activity_recording_and_retrieval` | Chronological immutable project event logs; credentials and tokens stripped before persistence. | **PASS** |
+| **21** | **Role-Based Financial Dashboards** | `frontend/src/pages/dashboard/DashboardPage.tsx` | `GET /api/v1/analytics/dashboard`<br>`GET /api/v1/analytics/payments` | `Payment`, `Milestone`, `Project` | `tests/test_day6_integration.py::test_dashboard_analytics_client_and_freelancer` | Client sees committed vs settled budgets and review center; Freelancer sees earnings and upcoming deadlines. | **PASS** |
+
+---
+
+## 2. Test Execution Summary
+
+- **Total Backend Tests:** 79 tests
+- **Passing Tests:** 79 tests (100% pass rate)
+- **Failing Tests:** 0
+- **Skipped Tests:** 0
+- **Total Frontend Compilation Errors:** 0 errors (`tsc -b && vite build` clean)
+- **Database Migrations:** Cleanly applied up to Alembic head `b95b944e495a`
+

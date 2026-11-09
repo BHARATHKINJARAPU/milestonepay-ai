@@ -345,3 +345,4 @@ def test_project_status_validation():
     )
     assert to_archived.status_code == 200
     assert to_archived.json()["status"] == "archived"
+

@@ -108,3 +108,4 @@ def login(req: UserLoginRequest, db: Session = Depends(get_db)) -> TokenResponse
 def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
     """Return profile for the currently authenticated user."""
     return current_user
+

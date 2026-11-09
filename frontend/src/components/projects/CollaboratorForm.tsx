@@ -112,3 +112,4 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({ project, onC
     </div>
   );
 };
+

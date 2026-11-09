@@ -47,3 +47,4 @@
 - [x] Collaborator form (`CollaboratorForm.tsx`) with email lookup and verification feedback
 - [x] Day 1 landing page preserved and updated with functional auth links
 - [x] Strict TypeScript validation and production build (`npm run build`) passing with zero errors
+

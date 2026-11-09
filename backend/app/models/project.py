@@ -10,6 +10,7 @@ from app.models.base import Base
 from app.models.enums import ProjectStatus
 
 if TYPE_CHECKING:
+    from app.models.milestone_plan import MilestonePlan
     from app.models.project_member import ProjectMember
     from app.models.user import User
 
@@ -56,6 +57,11 @@ class Project(Base):
         nullable=False,
     )
 
+    # Convenience property alias
+    @property
+    def budget(self) -> Decimal:
+        return self.budget_amount
+
     # Relationships
     creator: Mapped["User"] = relationship(
         "User",
@@ -66,3 +72,16 @@ class Project(Base):
         back_populates="project",
         cascade="all, delete-orphan",
     )
+    milestone_plans: Mapped[List["MilestonePlan"]] = relationship(
+        "MilestonePlan",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="MilestonePlan.version.desc()",
+    )
+    activities: Mapped[List["ProjectActivity"]] = relationship(
+        "ProjectActivity",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="ProjectActivity.created_at.desc()",
+    )
+

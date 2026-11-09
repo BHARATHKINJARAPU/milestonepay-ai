@@ -2,6 +2,7 @@ import React from 'react';
 import { Menu, Plus, Briefcase, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 interface DashboardHeaderProps {
   title: string;
@@ -38,6 +39,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
+        {user && <NotificationBell />}
+
         {user && (
           <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300">
             {user.account_type === 'client' ? (
@@ -63,3 +66,4 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     </header>
   );
 };
+
