@@ -50,6 +50,19 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: Optional[str]) -> str:
+        if not v or not str(v).strip():
+            return "postgresql+psycopg://milestonepay:milestonepay_dev_password@localhost:5432/milestonepay_dev"
+        url = str(v).strip()
+        # Render / Heroku compatibility: convert postgres:// and postgresql:// to postgresql+psycopg://
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+psycopg://", 1)
+        elif url.startswith("postgresql://") and not url.startswith("postgresql+"):
+            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return url
+
     @field_validator("GEMINI_MODEL", mode="before")
     @classmethod
     def normalize_gemini_model(cls, v: Optional[str]) -> str:
